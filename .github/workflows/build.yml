@@ -11,11 +11,13 @@ jobs:
     runs-on: [self-hosted]
 
     steps:
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0  # Fetch full history for better SonarQube analysis
 
+      # Step 2: Install Node.js
       - name: Install Node.js
         run: |
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -23,12 +25,15 @@ jobs:
           node -v
           npm -v
 
+      # Step 3: Install Dependencies
       - name: Install Dependencies
         run: npm install
 
+      # Step 4: Trivy File Scan
       - name: Trivy File Scan
         run: trivy fs . > trivyfs.txt
 
+      # Step 5: Docker Build and Push
       - name: Docker Build and Push
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -36,32 +41,39 @@ jobs:
         run: |
           echo $DOCKERHUB_TOKEN | docker login --username $DOCKERHUB_USERNAME --password-stdin
           docker build -t tic-tac-toe .
-          docker tag tic-tac-toe ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
-          docker push ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
+          docker tag tic-tac-toe iamjossi/jossigameapp2024:latest
+          docker push iamjossi/jossigameapp2024:latest
 
+      # Step 6: Image Scan
       - name: Image Scan
-        run: trivy image ${DOCKERHUB_USERNAME}/jossigameapp2024:latest > trivyimage.txt
+        run: trivy image iamjossi/jossigameapp2024:latest > trivyimage.txt
 
   deploy:
     needs: build
     runs-on: [self-hosted]
 
     steps:
+      # Step 1: Docker Pull Image
       - name: Docker Pull Image
-        run: docker pull ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
+        run: docker pull iamjossi/jossigameapp2024:latest
 
+      # Step 2: Image Scan
       - name: Image Scan
-        run: trivy image ${DOCKERHUB_USERNAME}/jossigameapp2024:latest > trivyimagedeploy.txt
+        run: trivy image iamjossi/jossigameapp2024:latest > trivyimagedeploy.txt
 
+      # Step 3: Deploy to Container
       - name: Deploy to Container
-        run: docker run -d --name game -p 3000:3000 ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
+        run: docker run -d --name game -p 3000:3000 iamjossi/jossigameapp2024:latest
 
+      # Step 4: Update Kubeconfig
       - name: Update Kubeconfig
         run: aws eks --region eu-west-2 update-kubeconfig --name EKS_CLOUD
 
+      # Step 5: Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: kubectl apply -f deployment-service.yml
 
+      # Step 6: Run SonarQube Scan
       - name: Run SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
         env:
