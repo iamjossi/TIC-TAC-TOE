@@ -1,4 +1,4 @@
-name: Build
+name: Build and Deploy
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Trivy file scan
+      - name: Trivy File Scan
         run: trivy fs . > trivyfs.txt
 
       - name: Docker Build and Push
@@ -38,30 +38,29 @@ jobs:
           docker build -t tic-tac-toe .
           docker tag tic-tac-toe ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
           docker push ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
-        
 
-      - name: Image scan
-        run: trivy image tic-tac-toe:latest > trivyimage.txt
-        
+      - name: Image Scan
+        run: trivy image ${DOCKERHUB_USERNAME}/jossigameapp2024:latest > trivyimage.txt
+
   deploy:
-   needs: build-analyze-scan   
-   runs-on: [self-hosted]
-   steps:
-      - name: docker pull image
-        run: docker pull jossigameapp/tic-tac-toe:latest
+    needs: build  # Updated to refer to the correct job
+    runs-on: [self-hosted]
 
-      - name: Image scan
-        run: trivy image jossigameapp2024/tic-tac-toe:latest > trivyimagedeploy.txt  
-  
-      - name: Deploy to container
-        run: docker run -d --name game -p 3000:3000 jossigameapp2024/tic-tac-toe:latest
+    steps:
+      - name: Docker Pull Image
+        run: docker pull ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
 
-      - name: Update kubeconfig
-        run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
+      - name: Image Scan
+        run: trivy image ${DOCKERHUB_USERNAME}/jossigameapp2024:latest > trivyimagedeploy.txt
 
-      - name: Deploy to kubernetes
+      - name: Deploy to Container
+        run: docker run -d --name game -p 3000:3000 ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
+
+      - name: Update Kubeconfig
+        run: aws eks --region eu-west-2 update-kubeconfig --name EKS_CLOUD
+
+      - name: Deploy to Kubernetes
         run: kubectl apply -f deployment-service.yml
-            
 
       - name: Run SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
