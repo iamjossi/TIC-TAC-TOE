@@ -43,7 +43,7 @@ jobs:
         run: trivy image ${DOCKERHUB_USERNAME}/jossigameapp2024:latest > trivyimage.txt
 
   deploy:
-    needs: build  # Updated to refer to the correct job
+    needs: build
     runs-on: [self-hosted]
 
     steps:
