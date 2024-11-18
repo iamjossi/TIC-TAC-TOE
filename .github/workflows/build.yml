@@ -38,10 +38,30 @@ jobs:
           docker build -t tic-tac-toe .
           docker tag tic-tac-toe ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
           docker push ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
+        
 
       - name: Image scan
         run: trivy image tic-tac-toe:latest > trivyimage.txt
-      
+        
+  deploy:
+   needs: build-analyze-scan   
+   runs-on: [self-hosted]
+   steps:
+      - name: docker pull image
+        run: docker pull jossigameapp/tic-tac-toe:latest
+
+      - name: Image scan
+        run: trivy image jossigameapp2024/tic-tac-toe:latest > trivyimagedeploy.txt  
+  
+      - name: Deploy to container
+        run: docker run -d --name game -p 3000:3000 jossigameapp2024/tic-tac-toe:latest
+
+      - name: Update kubeconfig
+        run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
+
+      - name: Deploy to kubernetes
+        run: kubectl apply -f deployment-service.yml
+            
 
       - name: Run SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
