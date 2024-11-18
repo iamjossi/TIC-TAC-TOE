@@ -27,7 +27,7 @@ jobs:
         run: npm install
 
       - name: Trivy file scan
-        run: trivy fs - > trivyfs.txt
+        run: trivy fs . > trivyfs.txt
 
       - name: Run SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
