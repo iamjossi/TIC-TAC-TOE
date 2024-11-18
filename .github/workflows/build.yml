@@ -39,6 +39,10 @@ jobs:
           docker tag tic-tac-toe ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
           docker push ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
 
+      - name: Image scan
+        run: trivy image jossigameapp2024/tic-tac-toe:latest > trivyimage.txt
+      
+
       - name: Run SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
         env:
