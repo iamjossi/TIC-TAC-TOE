@@ -40,7 +40,7 @@ jobs:
           docker push ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
 
       - name: Image scan
-        run: trivy image jossigameapp2024/tic-tac-toe:latest > trivyimage.txt
+        run: trivy image tic-tac-toe:latest > trivyimage.txt
       
 
       - name: Run SonarQube Scan
