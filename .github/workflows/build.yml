@@ -36,8 +36,8 @@ jobs:
         run: |
           echo $DOCKERHUB_TOKEN | docker login --username $DOCKERHUB_USERNAME --password-stdin
           docker build -t tic-tac-toe .
-          docker tag tic-tac-toe sevenajay/tic-tac-toe:latest
-          docker push sevenajay/tic-tac-toe:latest
+          docker tag tic-tac-toe ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
+          docker push ${DOCKERHUB_USERNAME}/jossigameapp2024:latest
 
       - name: Run SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
