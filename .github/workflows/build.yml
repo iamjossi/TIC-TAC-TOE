@@ -29,6 +29,9 @@ jobs:
       - name: Trivy file scan
         run: trivy fs . > trivyfs.txt
 
+      - name: Docker build and push
+        run: 
+
       - name: Run SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
         env:
