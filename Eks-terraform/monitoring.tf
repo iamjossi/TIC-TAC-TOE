@@ -54,11 +54,11 @@ resource "helm_release" "grafana" {
 
 # Outputs for accessing the monitoring tools
 output "prometheus_endpoint" {
-  value = helm_release.prometheus.status.load_balancer[0].ingress[0].hostname
+  value = helm_release.prometheus.status.load_balancer
   description = "Access Prometheus using this endpoint."
 }
 
 output "grafana_endpoint" {
-  value = helm_release.grafana.status.load_balancer[0].ingress[0].hostname
+  value = helm_release.grafana.status.load_balancer
   description = "Access Grafana using this endpoint."
 }
