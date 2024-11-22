@@ -1,3 +1,3 @@
 # terraform.tfvars
 
-key_name = "EC2"
+key_name = "Girl"
