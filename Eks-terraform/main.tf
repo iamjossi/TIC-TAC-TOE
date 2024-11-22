@@ -1,10 +1,10 @@
-# Random string suffix for IAM role names
+# Generate a random string for unique naming
 resource "random_string" "suffix" {
   length  = 8
   special = false
 }
 
-# IAM role for EKS cluster
+# IAM role for the EKS cluster
 resource "aws_iam_role" "eks_cluster_role" {
   name               = "eks-cluster-role-${random_string.suffix.result}"
   assume_role_policy = jsonencode({
@@ -21,7 +21,7 @@ resource "aws_iam_role" "eks_cluster_role" {
   })
 }
 
-# IAM policies for EKS cluster role
+# Attach the necessary IAM policies to the EKS cluster role
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.eks_cluster_role.name
@@ -43,7 +43,7 @@ resource "aws_iam_role" "eks_node_group_role" {
   })
 }
 
-# IAM policies for EKS node group
+# Attach IAM policies to the EKS node group role
 resource "aws_iam_role_policy_attachment" "eks_node_group_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
   role       = aws_iam_role.eks_node_group_role.name
@@ -59,7 +59,7 @@ resource "aws_iam_role_policy_attachment" "eks_node_group_ecr_policy" {
   role       = aws_iam_role.eks_node_group_role.name
 }
 
-# Default VPC and subnets
+# Get the default VPC and subnets
 data "aws_vpc" "default" {
   default = true
 }
@@ -71,7 +71,7 @@ data "aws_subnets" "public" {
   }
 }
 
-# EKS cluster
+# Create an EKS cluster
 resource "aws_eks_cluster" "example" {
   name     = "EKS_CLOUD"
   role_arn = aws_iam_role.eks_cluster_role.arn
@@ -85,7 +85,7 @@ resource "aws_eks_cluster" "example" {
   ]
 }
 
-# EKS node group
+# Create an EKS node group
 resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.example.name
   node_group_name = "Node-cloud"
@@ -106,14 +106,19 @@ resource "aws_eks_node_group" "example" {
   ]
 }
 
-# Kubernetes provider configuration
+# Configure the Kubernetes provider
 provider "kubernetes" {
   host                   = aws_eks_cluster.example.endpoint
   cluster_ca_certificate = base64decode(aws_eks_cluster.example.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.example.token
 }
 
-# EKS cluster auth data
+# Retrieve authentication data for EKS
 data "aws_eks_cluster_auth" "example" {
   name = aws_eks_cluster.example.name
+}
+
+# Output the EKS cluster endpoint
+output "eks_cluster_endpoint" {
+  value = aws_eks_cluster.example.endpoint
 }
