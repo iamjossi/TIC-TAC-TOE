@@ -1,3 +1,4 @@
+# Configure the Helm provider
 provider "helm" {
   kubernetes {
     host                   = data.aws_eks_cluster.example.endpoint
@@ -27,7 +28,6 @@ resource "helm_release" "prometheus" {
     server:
       service:
         type: LoadBalancer
-        port: 9090
     EOF
   ]
 
@@ -47,20 +47,22 @@ resource "helm_release" "grafana" {
     adminPassword: "admin"
     service:
       type: LoadBalancer
-      port: 3000
     EOF
   ]
 
   depends_on = [kubernetes_namespace.monitoring]
 }
 
+# Reference the existing EC2 instance
+data "aws_instance" "monitoring_instance" {
+  instance_id = "i-09cb0441c63b7e87e" # Replace with your existing instance ID
+}
+
 # Outputs for accessing the monitoring tools
 output "prometheus_endpoint" {
-  value = "http://${aws_instance.example.public_ip}:9090"
-  description = "Access Prometheus using this endpoint."
+  value = "http://${data.aws_instance.monitoring_instance.public_ip}:9090"
 }
 
 output "grafana_endpoint" {
-  value = "http://${aws_instance.example.public_ip}:3000"
-  description = "Access Grafana using this endpoint."
+  value = "http://${data.aws_instance.monitoring_instance.public_ip}:3000"
 }
