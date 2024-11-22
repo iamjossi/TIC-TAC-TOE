@@ -1,4 +1,4 @@
-# Generate a random string for unique naming
+# Create a random string suffix for unique IAM role names
 resource "random_string" "suffix" {
   length  = 8
   special = false
@@ -21,13 +21,13 @@ resource "aws_iam_role" "eks_cluster_role" {
   })
 }
 
-# Attach the necessary IAM policies to the EKS cluster role
+# Attach IAM policy for EKS cluster role
 resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.eks_cluster_role.name
 }
 
-# IAM role for EKS node group
+# IAM role for the EKS node group
 resource "aws_iam_role" "eks_node_group_role" {
   name = "eks-node-group-role-${random_string.suffix.result}"
 
@@ -43,7 +43,7 @@ resource "aws_iam_role" "eks_node_group_role" {
   })
 }
 
-# Attach IAM policies to the EKS node group role
+# Attach IAM policies for EKS node group role
 resource "aws_iam_role_policy_attachment" "eks_node_group_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
   role       = aws_iam_role.eks_node_group_role.name
@@ -59,11 +59,12 @@ resource "aws_iam_role_policy_attachment" "eks_node_group_ecr_policy" {
   role       = aws_iam_role.eks_node_group_role.name
 }
 
-# Get the default VPC and subnets
+# Get the default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
+# Get public subnets in the default VPC
 data "aws_subnets" "public" {
   filter {
     name   = "vpc-id"
@@ -106,19 +107,18 @@ resource "aws_eks_node_group" "example" {
   ]
 }
 
-# Configure the Kubernetes provider
+# Kubernetes provider configuration
 provider "kubernetes" {
-  host                   = aws_eks_cluster.example.endpoint
-  cluster_ca_certificate = base64decode(aws_eks_cluster.example.certificate_authority[0].data)
+  host                   = data.aws_eks_cluster.example.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.example.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.example.token
 }
 
-# Retrieve authentication data for EKS
-data "aws_eks_cluster_auth" "example" {
-  name = aws_eks_cluster.example.name
-}
-
-# Output the EKS cluster endpoint
+# Outputs
 output "eks_cluster_endpoint" {
   value = aws_eks_cluster.example.endpoint
+}
+
+output "eks_node_group_name" {
+  value = aws_eks_node_group.example.node_group_name
 }
