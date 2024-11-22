@@ -1,33 +1,35 @@
-provider "aws" {
-  region = "eu-west-2"
-}
-
-# Fetch default VPC
+# Data to retrieve the default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
-# Fetch default subnet
+# Data to retrieve the default VPC's subnets
 data "aws_subnet_ids" "default" {
   vpc_id = data.aws_vpc.default.id
 }
 
-# Create Security Group
-resource "aws_security_group" "runner_sg" {
-  name        = "self_hosted_runner_sg"
-  description = "Allow required ports for monitoring, runner, and HTTP/HTTPS"
+data "aws_subnet" "default" {
+  id = data.aws_subnet_ids.default.ids[0]
+}
+
+# Security group to allow required traffic
+resource "aws_security_group" "ec2_sg" {
+  name        = "ec2-instance-sg"
+  description = "Allow SSH, HTTP, HTTPS, Prometheus, Grafana, and additional ports"
   vpc_id      = data.aws_vpc.default.id
 
   # SSH
   ingress {
+    description = "Allow SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Restrict to your IP range
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # HTTP
   ingress {
+    description = "Allow HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -36,38 +38,52 @@ resource "aws_security_group" "runner_sg" {
 
   # HTTPS
   ingress {
+    description = "Allow HTTPS"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Prometheus
+  # Prometheus (port 9090)
   ingress {
+    description = "Allow Prometheus"
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Node Exporter
+  # Node Exporter (port 9100)
   ingress {
+    description = "Allow Node Exporter"
     from_port   = 9100
     to_port     = 9100
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Grafana
+  # Grafana (port 3000)
   ingress {
+    description = "Allow Grafana"
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow all outbound traffic
+  # Custom port (port 9000)
+  ingress {
+    description = "Allow custom port 9000"
+    from_port   = 9000
+    to_port     = 9000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow all egress
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -75,50 +91,18 @@ resource "aws_security_group" "runner_sg" {
   }
 }
 
-# IAM Role for EC2
-resource "aws_iam_role" "ec2_role" {
-  name = "EC2_Admin_Access"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-# Attach Administrative Access Policy to the Role
-resource "aws_iam_role_policy_attachment" "ec2_admin_access" {
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-  role       = aws_iam_role.ec2_role.name
-}
-
-# Instance Profile for EC2 Role
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "EC2_Instance_Profile"
-  role = aws_iam_role.ec2_role.name
-}
-
-# Launch EC2 Instance
-resource "aws_instance" "self_hosted_runner" {
-  ami           = "ami-1234567890abcdef0" # Replace with an appropriate AMI ID for your region
-  instance_type = "t2.medium"
-  subnet_id     = element(data.aws_subnet_ids.default.ids, 0)
+# EC2 Instance
+resource "aws_instance" "ec2_instance" {
+  ami           = "ami-0915bcb5fa77e4892" # Replace with your preferred Ubuntu AMI ID
+  instance_type = "t2.micro"
+  subnet_id     = data.aws_subnet.default.id
   security_groups = [
-    aws_security_group.runner_sg.name
+    aws_security_group.ec2_sg.name,
   ]
-  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
 
-  # Key Pair
-  key_name = "your-key-pair-name" # Replace with your existing EC2 key pair name
+  key_name = "your-key-pair-name" # Replace with your key pair
 
   tags = {
-    Name = "Self-Hosted Runner"
+    Name = "Self-Hosted-Runner"
   }
 }
