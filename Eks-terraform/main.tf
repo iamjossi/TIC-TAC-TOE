@@ -32,6 +32,7 @@ resource "aws_iam_role" "eks_node_group_role" {
   name = "eks-node-group-role-${random_string.suffix.result}"
 
   assume_role_policy = jsonencode({
+    Version = "2012-10-17"
     Statement = [{
       Action = "sts:AssumeRole"
       Effect = "Allow"
@@ -39,7 +40,6 @@ resource "aws_iam_role" "eks_node_group_role" {
         Service = "ec2.amazonaws.com"
       }
     }]
-    Version = "2012-10-17"
   })
 }
 
@@ -110,7 +110,7 @@ resource "aws_eks_node_group" "example" {
 # Kubernetes provider configuration
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.example.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.example.certificate_authority[0].data)
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.example.certificate_authority.0.data)
   token                  = data.aws_eks_cluster_auth.example.token
 }
 
