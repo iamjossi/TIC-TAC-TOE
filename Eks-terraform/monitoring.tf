@@ -27,6 +27,7 @@ resource "helm_release" "prometheus" {
     server:
       service:
         type: LoadBalancer
+        port: 9090
     EOF
   ]
 
@@ -46,6 +47,7 @@ resource "helm_release" "grafana" {
     adminPassword: "admin"
     service:
       type: LoadBalancer
+      port: 3000
     EOF
   ]
 
@@ -54,11 +56,11 @@ resource "helm_release" "grafana" {
 
 # Outputs for accessing the monitoring tools
 output "prometheus_endpoint" {
-  value = helm_release.prometheus.status.load_balancer
+  value = "http://${aws_instance.example.public_ip}:9090"
   description = "Access Prometheus using this endpoint."
 }
 
 output "grafana_endpoint" {
-  value = helm_release.grafana.status.load_balancer
+  value = "http://${aws_instance.example.public_ip}:3000"
   description = "Access Grafana using this endpoint."
 }
