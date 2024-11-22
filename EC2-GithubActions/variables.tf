@@ -1,4 +1,4 @@
 variable "key_name" {
-  description = "EC2"
+  description = "Girl"
   type        = string
 }
