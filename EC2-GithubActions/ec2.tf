@@ -117,6 +117,6 @@ resource "aws_instance" "TerraformInstance" {
   }
 
   tags = {
-    Name = "EC2-Instance"
+    Name = "EKS-GitActions"
   }
 }
