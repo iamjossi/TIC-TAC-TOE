@@ -1,7 +1,9 @@
-data "aws_eks_cluster" "example" {
+# Fetch details about the EKS cluster
+data "aws_eks_cluster" "eks_details" {
   name = aws_eks_cluster.example.name
 }
 
-data "aws_eks_cluster_auth" "example" {
+# Fetch the authentication token for the EKS cluster
+data "aws_eks_cluster_auth" "eks_auth" {
   name = aws_eks_cluster.example.name
 }
