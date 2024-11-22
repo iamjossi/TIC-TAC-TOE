@@ -1,89 +1,96 @@
-# Data to retrieve the default VPC
+# Configure the AWS Provider
+provider "aws" {
+  region = "us-east-1"
+}
+
+# Get the default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
-# Data to retrieve the default VPC's subnets
-data "aws_subnet_ids" "default" {
-  vpc_id = data.aws_vpc.default.id
+# Create an IAM role with administrative privileges
+resource "aws_iam_role" "ec2_admin" {
+  name        = "ec2-admin"
+  description = "Administrative role for EC2 instances"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Effect = "Allow"
+      }
+    ]
+  })
 }
 
-data "aws_subnet" "default" {
-  id = data.aws_subnet_ids.default.ids[0]
+# Attach the IAM policy for administrative privileges
+resource "aws_iam_role_policy_attachment" "ec2_admin_policy" {
+  role       = aws_iam_role.ec2_admin.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
-# Security group to allow required traffic
+# Create a security group with the specified ports open
 resource "aws_security_group" "ec2_sg" {
-  name        = "ec2-instance-sg"
-  description = "Allow SSH, HTTP, HTTPS, Prometheus, Grafana, and additional ports"
+  name        = "ec2-sg"
+  description = "Security group for EC2 instances"
   vpc_id      = data.aws_vpc.default.id
 
-  # SSH
+  # Inbound rules
   ingress {
-    description = "Allow SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTP
-  ingress {
-    description = "Allow HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # HTTPS
   ingress {
-    description = "Allow HTTPS"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Prometheus (port 9090)
   ingress {
-    description = "Allow Prometheus"
-    from_port   = 9090
-    to_port     = 9090
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Node Exporter (port 9100)
-  ingress {
-    description = "Allow Node Exporter"
-    from_port   = 9100
-    to_port     = 9100
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Grafana (port 3000)
-  ingress {
-    description = "Allow Grafana"
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Custom port (port 9000)
-  ingress {
-    description = "Allow custom port 9000"
     from_port   = 9000
     to_port     = 9000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow all egress
+  ingress {
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Outbound rules
   egress {
-    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -91,18 +98,25 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
-# EC2 Instance
-resource "aws_instance" "ec2_instance" {
-  ami           = "ami-0915bcb5fa77e4892" # Replace with your preferred Ubuntu AMI ID
-  instance_type = "t2.medium"
-  subnet_id     = data.aws_subnet.default.id
-  security_groups = [
-    aws_security_group.ec2_sg.name,
-  ]
+# Create an IAM instance profile for the EC2 instance
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2-profile"
+  role = aws_iam_role.ec2_admin.name
+}
 
-  key_name = "EC2" # Replace with your key pair
+# Create a 30GB root block device
+resource "aws_instance" "TerraformInstance" {
+  ami           = "ami-0866a3c8686eaeeba" # Ubuntu 24.04 LTS (HVM) - us-east-1
+  instance_type = "t2.medium"
+  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  key_name               = var.key_name # Replace with your existing key pair name
+
+  root_block_device {
+    volume_size = 30
+  }
 
   tags = {
-    Name = "Self-Hosted-Runner"
+    Name = "EC2-Instance"
   }
 }
