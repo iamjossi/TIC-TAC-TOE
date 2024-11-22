@@ -55,7 +55,7 @@ resource "helm_release" "grafana" {
 
 # Reference the existing EC2 instance
 data "aws_instance" "monitoring_instance" {
-  instance_id = "i-09cb0441c63b7e87e" # Replace with your existing instance ID
+  instance_id = "i-07bd5d19a7aae5470" # Replace with your existing instance ID
 }
 
 # Outputs for accessing the monitoring tools
