@@ -1,8 +1,3 @@
-# Configure the AWS Provider
-provider "aws" {
-  region = "eu-west-2"
-}
-
 # Create a random string suffix for the IAM role names
 resource "random_string" "suffix" {
   length  = 8
