@@ -94,13 +94,13 @@ resource "aws_security_group" "ec2_sg" {
 # EC2 Instance
 resource "aws_instance" "ec2_instance" {
   ami           = "ami-0915bcb5fa77e4892" # Replace with your preferred Ubuntu AMI ID
-  instance_type = "t2.micro"
+  instance_type = "t2.medium"
   subnet_id     = data.aws_subnet.default.id
   security_groups = [
     aws_security_group.ec2_sg.name,
   ]
 
-  key_name = "your-key-pair-name" # Replace with your key pair
+  key_name = "EC2" # Replace with your key pair
 
   tags = {
     Name = "Self-Hosted-Runner"
